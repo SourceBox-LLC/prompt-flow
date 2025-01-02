@@ -4,49 +4,51 @@ import streamlit as st
 def invoke_anthropic(self):
     in_val = self.get_interface(name='input_0')
     if in_val:
-        st.write("Anthropic block received input:", in_val)
+        st.sidebar.write("Anthropic block received input:", in_val)
         out_val = f"Anthropic response: {in_val}"
         self.set_interface(name='output_0', value=out_val)
-        st.write("Anthropic block set output:", out_val)
+        st.sidebar.write("Anthropic block set output:", out_val)
     else:
-        st.write("Anthropic block received no input.")
+        st.sidebar.write("Anthropic block received no input.")
 
 def feed_compute(self):
     with st.form("prompt_form"):
         text = st.text_input("Enter Prompt Text:")
         submitted = st.form_submit_button("Submit")
         if submitted:
-            st.write("Prompt block submitted:", text)
+            st.sidebar.write("Prompt block submitted:", text)
             self.set_interface(name='output_0', value=text)
 
 def final_output_compute(self):
     val = self.get_interface(name='input_0')
     if val:
-        st.write("Final output block received input:", val)
+        st.sidebar.write("Final output block received input:", val)
     else:
-        st.write("Final output block received no input.")
+        st.sidebar.write("Final output block received no input.")
 
 def tavily_search_compute(self):
     in_val = self.get_interface(name='input_0')
     if in_val:
-        st.write("Tavily Search block received input:", in_val)
+        st.sidebar.write("Tavily Search block received input:", in_val)
         out_val = f"Tavily Search result for: {in_val}"
         self.set_interface(name='output_0', value=out_val)
-        st.write("Tavily Search block set output:", out_val)
+        st.sidebar.write("Tavily Search block set output:", out_val)
     else:
-        st.write("Tavily Search block received no input.")
+        st.sidebar.write("Tavily Search block received no input.")
 
 def duckduckgo_search_compute(self):
     in_val = self.get_interface(name='input_0')
     if in_val:
-        st.write("DuckDuckGo Search block received input:", in_val)
+        st.sidebar.write("DuckDuckGo Search block received input:", in_val)
         out_val = f"DuckDuckGo Search result for: {in_val}"
         self.set_interface(name='output_0', value=out_val)
-        st.write("DuckDuckGo Search block set output:", out_val)
+        st.sidebar.write("DuckDuckGo Search block set output:", out_val)
     else:
-        st.write("DuckDuckGo Search block received no input.")
+        st.sidebar.write("DuckDuckGo Search block received no input.")
 
 st.sidebar.title("Barfi")
+
+
 
 # base blocks
 feed = Block(name='Prompt')
