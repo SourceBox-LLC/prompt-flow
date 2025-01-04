@@ -108,7 +108,19 @@ def main_page():
 
     if "barfi_key" not in st.session_state:
         st.session_state["barfi_key"] = "barfi_default"
-    
+
+    if "test_flow_active" not in st.session_state:
+        st.session_state["test_flow_active"] = False
+
+    if st.session_state["test_flow_active"]:
+        if st.sidebar.button("Back"):
+            st.session_state["test_flow_active"] = False
+            st.rerun()
+        else:
+            st.sidebar.write("Chatbot Interface")
+            # Add your chatbot interface code here
+            return
+
     reset_canvas = st.sidebar.button("Reset Canvas")
     if reset_canvas:
         # Flip to a new key so that Barfi doesn't load old state
@@ -128,6 +140,10 @@ def main_page():
     if selected_template and selected_template != "No saved templates":
         st.sidebar.write("You selected:", selected_template)
         st.sidebar.json(st.session_state["templates"][selected_template])
+
+    if st.sidebar.button("Test Flow"):
+        st.session_state["test_flow_active"] = True
+        st.rerun()
 
     # ---------------------------
     # Create Other Existing Blocks
