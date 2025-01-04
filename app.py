@@ -78,6 +78,19 @@ def init_block_compute(self):
     self.set_interface(name='output_0', value=initial_value)
     st.sidebar.write("Init Block has set the initial value.")
 
+def parser_block_compute(self):
+    """
+    Compute function for the Parser Block.
+    """
+    selected_options = st.multiselect(
+        "Select parsing options:",
+        options=["{}", "[]", "<>", "()", "''", '""'],
+        default=["{}"]
+    )
+    st.sidebar.write("Selected parsing options:", selected_options)
+    # For now, just set the selected options as the output
+    self.set_interface(name='output_0', value=selected_options)
+
 ###############################################################################
 # 2. Utility Functions
 ###############################################################################
@@ -171,6 +184,11 @@ def main_page():
     init_block.add_output(name="output_0")
     init_block.add_compute(init_block_compute)
 
+    parser_block = Block(name="Parser Block")
+    parser_block.add_input(name='input_0')
+    parser_block.add_output(name='output_0')
+    parser_block.add_compute(parser_block_compute)
+
     # ------------------------------------------------
     # Create a Prompt block PER template in session_state
     # ------------------------------------------------
@@ -201,6 +219,7 @@ def main_page():
     # -----------------------------
     st_barfi(
         base_blocks=[
+            parser_block,
             init_block,
             anthropic_block,
             tavily_block,
