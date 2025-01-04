@@ -108,6 +108,19 @@ def main_page():
     """
     st.sidebar.title("Barfi")
 
+    if "barfi_key" not in st.session_state:
+        st.session_state["barfi_key"] = "barfi_default"
+    
+    reset_canvas = st.sidebar.button("Reset Canvas")
+    if reset_canvas:
+        # Flip to a new key so that Barfi doesn't load old state
+        st.session_state["barfi_key"] = "barfi_reset"
+        st.rerun()
+
+
+        
+
+
     # Dynamically load template names from session_state
     template_names = []
     if "templates" in st.session_state and st.session_state["templates"]:
@@ -180,14 +193,16 @@ def main_page():
     # Render Barfi interface with all blocks including Init and dynamic Prompt Block
     st_barfi(
         base_blocks=[
-            init_block,          # Init Block as the starting point
-            prompt_block,        # Dynamic Prompt Block
+            init_block,
+            prompt_block,
             anthropic_block,
             tavily_block,
             duckduckgo_block,
             final_output
-        ]
+        ],
+        key=st.session_state["barfi_key"]
     )
+
 
 ###############################################################################
 # 4. Compute Function Factory for Prompt Block
