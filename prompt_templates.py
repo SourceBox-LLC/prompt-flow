@@ -44,8 +44,21 @@ def prompt_templates_app():
     temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, 
                             value=0.7, step=0.1)
 
+    # 3. Save Template Button
     if st.button("Save Template"):
-        st.write("Template saved")
+        # Initialize 'templates' dict in session_state if needed
+        if "templates" not in st.session_state:
+            st.session_state["templates"] = {}
+
+        # Save the template data into session_state["templates"]
+        st.session_state["templates"][template_name] = {
+            "prompt_template": prompt_template,
+            "placeholder_json": placeholder_json,
+            "model_name": model_name,
+            "temperature": temperature,
+        }
+
+        st.success(f"Template '{template_name}' has been saved!")
 
     with st.sidebar:
         st.title("Prompt Tester with AWS Bedrock")
