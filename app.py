@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 from barfi import st_barfi, Block
 from prompt_templates import prompt_templates_app
@@ -104,7 +102,7 @@ def main_page():
     """
     Renders the main Barfi blocks page.
     Includes the Init Block as the starting point of the flow.
-    Dynamically creates Prompt Blocks based on selected template.
+    Creates one Prompt block per template (instead of one global block).
     """
     st.sidebar.title("Barfi")
 
@@ -117,54 +115,23 @@ def main_page():
         st.session_state["barfi_key"] = "barfi_reset"
         st.rerun()
 
-
-        
-
-
-    # Dynamically load template names from session_state
+    # (Optional) You can still show a dropdown of all saved templates in the sidebar
+    # for informational purposes, but it will NOT affect the block creation below.
     template_names = []
     if "templates" in st.session_state and st.session_state["templates"]:
         template_names = list(st.session_state["templates"].keys())
 
-    # Display a selectbox of all saved templates
     selected_template = st.sidebar.selectbox(
         "Select a saved template:",
         template_names if template_names else ["No saved templates"]
     )
-
     if selected_template and selected_template != "No saved templates":
         st.sidebar.write("You selected:", selected_template)
-        # Optionally show data about the selected template
         st.sidebar.json(st.session_state["templates"][selected_template])
 
-        # Retrieve the selected template details
-        template = st.session_state["templates"][selected_template]
-        prompt_template = template["prompt_template"]
-
-        # Parse variables from the prompt template
-        variables = parse_template_variables(prompt_template)
-
-        # Create the Prompt Block with dynamic inputs
-        prompt_block = Block(name='Prompt')
-
-        # Add input nodes for each variable
-        for var in variables:
-            prompt_block.add_input(name=var)
-
-        # Add a single output node
-        prompt_block.add_output(name='output_0')
-
-        # Assign the compute function
-        prompt_block.add_compute(prompt_compute_factory(prompt_template, variables))
-
-    else:
-        # If no template is selected, create a default Prompt Block without dynamic inputs
-        prompt_block = Block(name='Prompt')
-        prompt_block.add_input(name='default_input')
-        prompt_block.add_output(name='output_0')
-        prompt_block.add_compute(feed_compute)
-
-    # Create other existing blocks
+    # ---------------------------
+    # Create Other Existing Blocks
+    # ---------------------------
     final_output = Block(name="Final Output")
     final_output.add_input(name='input_0')
     final_output.add_compute(final_output_compute)
@@ -184,25 +151,49 @@ def main_page():
     duckduckgo_block.add_output(name='output_0')
     duckduckgo_block.add_compute(duckduckgo_search_compute)
 
-    # Create the Init Block
     init_block = Block(name="Init Block")
-    # No inputs, only an output
     init_block.add_output(name="output_0")
     init_block.add_compute(init_block_compute)
 
-    # Render Barfi interface with all blocks including Init and dynamic Prompt Block
+    # ------------------------------------------------
+    # Create a Prompt block PER template in session_state
+    # ------------------------------------------------
+    all_prompt_blocks = []
+    if "templates" in st.session_state and st.session_state["templates"]:
+        for tmpl_name, tmpl_data in st.session_state["templates"].items():
+            prompt_template = tmpl_data["prompt_template"]
+            variables = parse_template_variables(prompt_template)
+
+            # Give each template a unique name, so they show up distinctly in the Barfi menu
+            block_title = f"Prompt: {tmpl_name}"
+            new_block = Block(name=block_title)
+
+            # Add input nodes for each variable
+            for var in variables:
+                new_block.add_input(name=var)
+
+            # Add a single output node
+            new_block.add_output(name='output_0')
+
+            # Assign the compute function
+            new_block.add_compute(prompt_compute_factory(prompt_template, variables))
+
+            all_prompt_blocks.append(new_block)
+
+    # -----------------------------
+    # Render Everything in Barfi
+    # -----------------------------
     st_barfi(
         base_blocks=[
             init_block,
-            prompt_block,
             anthropic_block,
             tavily_block,
             duckduckgo_block,
-            final_output
+            final_output,
+            *all_prompt_blocks  # add all generated prompt blocks
         ],
         key=st.session_state["barfi_key"]
     )
-
 
 ###############################################################################
 # 4. Compute Function Factory for Prompt Block
