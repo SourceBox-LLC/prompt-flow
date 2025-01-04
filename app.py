@@ -88,8 +88,45 @@ def parser_block_compute(self):
         default=["{}"]
     )
     st.sidebar.write("Selected parsing options:", selected_options)
-    # For now, just set the selected options as the output
-    self.set_interface(name='output_0', value=selected_options)
+    
+    # Input
+    in_val = self.get_interface(name='input_0')
+    if not in_val:
+        st.sidebar.write("No input to parse.")
+        for node in ['curly', 'square', 'angle', 'paren', 'single_quote', 'double_quote']:
+            self.set_interface(name=node, value=None)
+        return
+
+    # For each bracket type, either produce a 'parsed' output or None
+    if "{}" in selected_options:
+        self.set_interface(name='curly', value=f"Parsed Curly: {in_val}")
+    else:
+        self.set_interface(name='curly', value=None)
+
+    if "[]" in selected_options:
+        self.set_interface(name='square', value=f"Parsed Square: {in_val}")
+    else:
+        self.set_interface(name='square', value=None)
+
+    if "<>" in selected_options:
+        self.set_interface(name='angle', value=f"Parsed Angle: {in_val}")
+    else:
+        self.set_interface(name='angle', value=None)
+
+    if "()" in selected_options:
+        self.set_interface(name='paren', value=f"Parsed Paren: {in_val}")
+    else:
+        self.set_interface(name='paren', value=None)
+
+    if "''" in selected_options:
+        self.set_interface(name='single_quote', value=f"Parsed Single Quotes: {in_val}")
+    else:
+        self.set_interface(name='single_quote', value=None)
+
+    if '""' in selected_options:
+        self.set_interface(name='double_quote', value=f"Parsed Double Quotes: {in_val}")
+    else:
+        self.set_interface(name='double_quote', value=None)
 
 ###############################################################################
 # 2. Utility Functions
@@ -186,7 +223,12 @@ def main_page():
 
     parser_block = Block(name="Parser Block")
     parser_block.add_input(name='input_0')
-    parser_block.add_output(name='output_0')
+    parser_block.add_output(name='curly {}')
+    parser_block.add_output(name='square []')
+    parser_block.add_output(name='angle <>')
+    parser_block.add_output(name='paren ()')
+    parser_block.add_output(name='single_quote \'\'')
+    parser_block.add_output(name='double_quote \"\"')
     parser_block.add_compute(parser_block_compute)
 
     # ------------------------------------------------
