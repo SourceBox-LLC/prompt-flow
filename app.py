@@ -128,10 +128,15 @@ def init_block_compute(self):
     This block serves as the starting point of the flow.
     """
     st.sidebar.write("Init Block is the start of the flow.")
-    # Optionally, you can set an initial value or perform any startup logic here.
-    initial_value = "Flow Initiated"
-    self.set_interface(name='output_0', value=initial_value)
-    st.sidebar.write("Init Block has set the initial value.")
+    
+    # Read from session state
+    user_input = st.session_state.get("init_input", "")
+    
+    if user_input:
+        self.set_interface(name='output_0', value=user_input)
+        st.sidebar.write("Init Block has set the initial value:", user_input)
+    else:
+        st.sidebar.write("No input provided in Init Block.")
 
 def parser_block_compute(self):
     """
@@ -242,9 +247,9 @@ def main_page():
     # Removed the "Test Flow" button and logic
     # ---------------------------------------------
 
-    # New "Initialize Flow" elements in the sidebar (no-op for now)
+    # New "Initialize Flow" elements in the sidebar
     st.sidebar.write("Initialize Flow")
-    st.sidebar.chat_input("Enter your prompt here")
+    st.sidebar.text_input("Enter your prompt here", key="init_input")
 
     # ---------------------------
     # Create Other Existing Blocks
