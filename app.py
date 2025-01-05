@@ -4,6 +4,7 @@ from prompt_templates import prompt_templates_app
 import re  # For parsing variables from the prompt template
 from langchain_community.tools import DuckDuckGoSearchRun 
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
+from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
 import boto3
 import json
 
@@ -50,7 +51,7 @@ def final_output_compute(self):
 
 
 ###############################################################################
-# 2. Search Functions
+# 2. InternetSearch Functions
 ###############################################################################
 
 def tavily_search_compute(self):
@@ -85,7 +86,7 @@ def duckduckgo_search_compute(self):
 
 
 ###############################################################################
-# 3. Knowledge Functions
+# 3. Knowledge/Search Functions
 ###############################################################################
 def pubmed_search_compute(self):
     """
@@ -105,6 +106,19 @@ def pubmed_search_compute(self):
         st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
     else:
         st.sidebar.write("PubMed Search block received no input.")
+
+def yahoo_finance_news_compute(self):
+    """
+    Compute function for the Yahoo Finance News (Tool) Block.
+    """
+    in_val = self.get_interface(name='input_0')
+    if in_val:
+        tool = YahooFinanceNewsTool()   
+        out_val = tool.invoke(in_val)
+        self.set_interface(name='output_0', value=out_val)
+        st.sidebar.write("Yahoo Finance News block set output:", out_val)
+    else:
+        st.sidebar.write("Yahoo Finance News block received no input.")
 
 
 
@@ -273,6 +287,11 @@ def main_page():
     pubmed_block.add_output(name='output_0')
     pubmed_block.add_compute(pubmed_search_compute)
 
+    yahoo_finance_news_block = Block(name='Yahoo Finance News (Tool)')
+    yahoo_finance_news_block.add_input(name='input_0')
+    yahoo_finance_news_block.add_output(name='output_0')
+    yahoo_finance_news_block.add_compute(yahoo_finance_news_compute)
+
     # ------------------------------------------------
     # Create a Prompt block PER template in session_state
     # ------------------------------------------------
@@ -309,6 +328,7 @@ def main_page():
             tavily_block,
             duckduckgo_block,
             pubmed_block,
+            yahoo_finance_news_block,
             final_output,
             *all_prompt_blocks  # add all generated prompt blocks
         ],
