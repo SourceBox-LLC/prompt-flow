@@ -2,6 +2,9 @@ import streamlit as st
 from barfi import st_barfi, Block
 from prompt_templates import prompt_templates_app
 import re  # For parsing variables from the prompt template
+from langchain_community.tools import DuckDuckGoSearchRun
+import boto3
+import json
 
 ###############################################################################
 # 1. Define Compute Functions
@@ -14,7 +17,10 @@ def invoke_anthropic(self):
     in_val = self.get_interface(name='input_0')
     if in_val:
         st.sidebar.write("Anthropic block received input:", in_val)
-        out_val = f"Anthropic response: {in_val}"
+        
+        # Call the LLM using the input value
+        out_val = call_llm(prompt=in_val)
+        
         self.set_interface(name='output_0', value=out_val)
         st.sidebar.write("Anthropic block set output:", out_val)
     else:
@@ -56,12 +62,16 @@ def tavily_search_compute(self):
 
 def duckduckgo_search_compute(self):
     """
-    Compute function for the DuckDuckGo Search (Tool) Block.
+    Compute function for the DuckDuckGo Search (Tool) Block using Langchain.
     """
     in_val = self.get_interface(name='input_0')
     if in_val:
         st.sidebar.write("DuckDuckGo Search block received input:", in_val)
-        out_val = f"DuckDuckGo Search result for: {in_val}"
+        
+        # Use Langchain's DuckDuckGoSearchTool
+        search_tool = DuckDuckGoSearchRun()
+        out_val = search_tool.invoke(in_val)
+        
         self.set_interface(name='output_0', value=out_val)
         st.sidebar.write("DuckDuckGo Search block set output:", out_val)
     else:
@@ -159,17 +169,9 @@ def main_page():
     if "barfi_key" not in st.session_state:
         st.session_state["barfi_key"] = "barfi_default"
 
-    if "test_flow_active" not in st.session_state:
-        st.session_state["test_flow_active"] = False
-
-    if st.session_state["test_flow_active"]:
-        if st.sidebar.button("Back"):
-            st.session_state["test_flow_active"] = False
-            st.rerun()
-        else:
-            st.sidebar.write("Chatbot Interface")
-            # Add your chatbot interface code here
-            return
+    # --------------------------------------------
+    # Removed all "test_flow_active" chat logic
+    # --------------------------------------------
 
     reset_canvas = st.sidebar.button("Reset Canvas")
     if reset_canvas:
@@ -191,9 +193,13 @@ def main_page():
         st.sidebar.write("You selected:", selected_template)
         st.sidebar.json(st.session_state["templates"][selected_template])
 
-    if st.sidebar.button("Test Flow"):
-        st.session_state["test_flow_active"] = True
-        st.rerun()
+    # ---------------------------------------------
+    # Removed the "Test Flow" button and logic
+    # ---------------------------------------------
+
+    # New "Initialize Flow" elements in the sidebar (no-op for now)
+    st.sidebar.write("Initialize Flow")
+    st.sidebar.chat_input("Enter your prompt here")
 
     # ---------------------------
     # Create Other Existing Blocks
@@ -279,13 +285,6 @@ def main_page():
 def prompt_compute_factory(prompt_template: str, variables: list):
     """
     Creates a compute function for the Prompt Block based on the template and variables.
-
-    Args:
-        prompt_template (str): The prompt template with placeholders.
-        variables (list): List of variable names to inject into the prompt.
-
-    Returns:
-        function: A compute function tailored for the Prompt Block.
     """
     def prompt_compute(self):
         """
@@ -308,18 +307,8 @@ def prompt_compute_factory(prompt_template: str, variables: list):
             st.sidebar.write("### Final Prompt:")
             st.sidebar.code(final_prompt, language="markdown")
 
-            # Call the LLM (assuming call_llm is accessible here)
-            output = call_llm(
-                prompt=final_prompt,
-                model=st.session_state.get("current_model", "cohere.command-r-plus-v1:0"),
-                temperature=st.session_state.get("current_temperature", 0.7)
-            )
-
-            st.sidebar.write("### Model Output:")
-            st.sidebar.write(output)
-
-            # Set the output interface
-            self.set_interface(name='output_0', value=output)
+            # Set the output interface with the formatted prompt
+            self.set_interface(name='output_0', value=final_prompt)
 
         except Exception as e:
             st.error(f"Error generating prompt: {e}")
@@ -330,9 +319,9 @@ def prompt_compute_factory(prompt_template: str, variables: list):
 # 5. Define the Call LLM Function
 ###############################################################################
 
-def call_llm(prompt: str, model="cohere.command-r-plus-v1:0", temperature=0.7) -> str:
+def call_llm(prompt: str, model="anthropic.claude-3-5-sonnet-20240620-v1:0", temperature=0.7) -> str:
     """
-    Example LLM call using AWS Bedrock's Cohere model: cohere.command-r-plus-v1:0.
+    Example LLM call using AWS Bedrock's Anthropic model: anthropic.claude-3-5-sonnet-20240620-v1:0.
     Adjust the JSON structure based on the actual model's response in your environment.
     """
     bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
