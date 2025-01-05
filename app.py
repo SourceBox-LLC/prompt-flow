@@ -2,7 +2,8 @@ import streamlit as st
 from barfi import st_barfi, Block
 from prompt_templates import prompt_templates_app
 import re  # For parsing variables from the prompt template
-from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.tools import DuckDuckGoSearchRun 
+from langchain_community.tools.pubmed.tool import PubmedQueryRun
 import boto3
 import json
 
@@ -47,6 +48,11 @@ def final_output_compute(self):
     else:
         st.sidebar.write("Final output block received no input.")
 
+
+###############################################################################
+# 2. Search Functions
+###############################################################################
+
 def tavily_search_compute(self):
     """
     Compute function for the Tavily Search (Tool) Block.
@@ -76,6 +82,31 @@ def duckduckgo_search_compute(self):
         st.sidebar.write("DuckDuckGo Search block set output:", out_val)
     else:
         st.sidebar.write("DuckDuckGo Search block received no input.")
+
+
+###############################################################################
+# 3. Knowledge Functions
+###############################################################################
+def pubmed_search_compute(self):
+    """
+    Compute function for the PubMed Search (Tool) Block.
+    """
+
+    in_val = self.get_interface(name='input_0')
+    if in_val:
+        st.sidebar.write("PubMed Search block received input:", in_val)
+        
+        # Use Langchain's PubMedSearchTool
+        search_tool = PubmedQueryRun()
+        out_val = search_tool.invoke(in_val)
+        
+        self.set_interface(name='output_0', value=out_val)
+        st.sidebar.write("PubMed Search block set output:", out_val)
+        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
+    else:
+        st.sidebar.write("PubMed Search block received no input.")
+
+
 
 def init_block_compute(self):
     """
@@ -237,6 +268,11 @@ def main_page():
     parser_block.add_output(name='double_quote \"\"')
     parser_block.add_compute(parser_block_compute)
 
+    pubmed_block = Block(name='PubMed Search (Tool)')
+    pubmed_block.add_input(name='input_0')
+    pubmed_block.add_output(name='output_0')
+    pubmed_block.add_compute(pubmed_search_compute)
+
     # ------------------------------------------------
     # Create a Prompt block PER template in session_state
     # ------------------------------------------------
@@ -272,6 +308,7 @@ def main_page():
             anthropic_block,
             tavily_block,
             duckduckgo_block,
+            pubmed_block,
             final_output,
             *all_prompt_blocks  # add all generated prompt blocks
         ],
