@@ -189,20 +189,6 @@ def pack_block_compute(self):
     else:
         st.sidebar.write("Pack Block received no input.")
 
-def replicate_block_compute(self):
-    """
-    Compute function for the Replicate Block.
-    """
-    in_val = self.get_interface(name='input_0')
-    if in_val:
-        st.sidebar.write("Replicate Block received input:", in_val)
-        # Send the same input to all three outputs
-        self.set_interface(name='output_1', value=in_val)
-        self.set_interface(name='output_2', value=in_val)
-        self.set_interface(name='output_3', value=in_val)
-        st.sidebar.write("Replicate Block set outputs:", in_val, in_val, in_val)
-    else:
-        st.sidebar.write("Replicate Block received no input.")
 
 def combine_block_compute(self):
     """
@@ -339,12 +325,6 @@ def main_page():
     pack_block.add_output(name='output_0')
     pack_block.add_compute(pack_block_compute)
 
-    replicate_block = Block(name='Replicate Block')
-    replicate_block.add_input(name='input_0')
-    replicate_block.add_output(name='output_1')
-    replicate_block.add_output(name='output_2')
-    replicate_block.add_output(name='output_3')
-    replicate_block.add_compute(replicate_block_compute)
 
     combine_block = Block(name='Combine Block')
     combine_block.add_input(name='input_1')
@@ -391,7 +371,6 @@ def main_page():
             wikipedia_block,
             final_output,
             pack_block,
-            replicate_block,
             combine_block,
             *all_prompt_blocks  # add all generated prompt blocks
         ],
