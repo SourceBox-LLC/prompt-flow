@@ -189,40 +189,47 @@ def pack_block_compute(self):
     else:
         st.sidebar.write("Pack Block received no input.")
 
-def split_block_compute(self):
+def replicate_block_compute(self):
     """
-    Compute function for the Split Block.
+    Compute function for the Replicate Block.
     """
     in_val = self.get_interface(name='input_0')
     if in_val:
-        st.sidebar.write("Split Block received input:", in_val)
-        # Dummy processing logic to split input into three parts
+        st.sidebar.write("Replicate Block received input:", in_val)
+        # Dummy processing logic to replicate input into three parts
         part1 = f"Part 1: {in_val}"
         part2 = f"Part 2: {in_val}"
         part3 = f"Part 3: {in_val}"
         self.set_interface(name='output_1', value=part1)
         self.set_interface(name='output_2', value=part2)
         self.set_interface(name='output_3', value=part3)
-        st.sidebar.write("Split Block set outputs:", part1, part2, part3)
+        st.sidebar.write("Replicate Block set outputs:", part1, part2, part3)
     else:
-        st.sidebar.write("Split Block received no input.")
+        st.sidebar.write("Replicate Block received no input.")
 
 def combine_block_compute(self):
     """
     Compute function for the Combine Block.
     """
-    in_val1 = self.get_interface(name='input_1')
-    in_val2 = self.get_interface(name='input_2')
-    in_val3 = self.get_interface(name='input_3')
+    # Collect inputs
+    inputs = [
+        self.get_interface(name='input_1'),
+        self.get_interface(name='input_2'),
+        self.get_interface(name='input_3')
+    ]
     
-    if in_val1 and in_val2 and in_val3:
-        st.sidebar.write("Combine Block received inputs:", in_val1, in_val2, in_val3)
-        # Dummy processing logic to combine inputs
-        combined_val = f"Combined: {in_val1}, {in_val2}, {in_val3}"
+    # Debug: Print input values
+    st.sidebar.write("Combine Block inputs:", inputs)
+    
+    # Filter out None values and join the inputs
+    combined_val = " + ".join(filter(None, inputs))
+    
+    if combined_val:
+        st.sidebar.write("Combine Block received inputs:", inputs)
         self.set_interface(name='output_0', value=combined_val)
         st.sidebar.write("Combine Block set output:", combined_val)
     else:
-        st.sidebar.write("Combine Block received incomplete inputs.")
+        st.sidebar.write("Combine Block received no valid inputs.")
 
 ###############################################################################
 # 2. Utility Functions
@@ -333,12 +340,12 @@ def main_page():
     pack_block.add_output(name='output_0')
     pack_block.add_compute(pack_block_compute)
 
-    split_block = Block(name='Split Block')
-    split_block.add_input(name='input_0')
-    split_block.add_output(name='output_1')
-    split_block.add_output(name='output_2')
-    split_block.add_output(name='output_3')
-    split_block.add_compute(split_block_compute)
+    replicate_block = Block(name='Replicate Block')
+    replicate_block.add_input(name='input_0')
+    replicate_block.add_output(name='output_1')
+    replicate_block.add_output(name='output_2')
+    replicate_block.add_output(name='output_3')
+    replicate_block.add_compute(replicate_block_compute)
 
     combine_block = Block(name='Combine Block')
     combine_block.add_input(name='input_1')
@@ -385,7 +392,7 @@ def main_page():
             wikipedia_block,
             final_output,
             pack_block,
-            split_block,
+            replicate_block,
             combine_block,
             *all_prompt_blocks  # add all generated prompt blocks
         ],
