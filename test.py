@@ -1,23 +1,24 @@
-from langchain_community.tools import WikipediaQueryRun
-from langchain_community.utilities import WikipediaAPIWrapper
+from langchain_community.tools.tavily_search import TavilySearchResults
+import streamlit as st
 
-def test_wikipedia_search():
-    # Create an instance of the WikipediaAPIWrapper
-    api_wrapper = WikipediaAPIWrapper()
-    
-    # Create an instance of the WikipediaQueryRun tool with the API wrapper
-    search_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
-    
-    # Define a test query
-    test_query = "Python programming language"
-    
-    # Invoke the search tool with the test query
-    result = search_tool.invoke(test_query)
-    
-    # Print the result
-    print("Wikipedia Search Result for '{}':".format(test_query))
-    print(result)
+def test_tavily_search():
+    # Example input for testing
+    test_input = "Example search query"
 
-# Run the test
+    # Initialize the TavilySearchResults with the API key from secrets
+    api_key = st.secrets["TAVILY_API_KEY"]
+    search = TavilySearchResults(
+        max_results=2, 
+        tavily_api_key=api_key
+    )
+
+    # Invoke the search with the test input
+    try:
+        result = search.invoke({"query": test_input})
+        print("Tavily Search Result:", result)
+    except Exception as e:
+        print(f"Error during Tavily Search: {e}")
+
+# Run the test function
 if __name__ == "__main__":
-    test_wikipedia_search()
+    test_tavily_search()

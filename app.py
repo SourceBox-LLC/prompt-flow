@@ -2,13 +2,12 @@ import streamlit as st
 from barfi import st_barfi, Block
 from prompt_templates import prompt_templates_app
 import re  # For parsing variables from the prompt template
-from langchain_community.tools import DuckDuckGoSearchRun 
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
-from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 import boto3
 import json
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 ###############################################################################
 # 1. Define Compute Functions
@@ -51,50 +50,32 @@ def final_output_compute(self):
     else:
         st.sidebar.write("Final output block received no input.")
 
-
-###############################################################################
-# 2. InternetSearch Functions
-###############################################################################
-
-def tavily_search_compute(self):
+def web_search_compute(self):
     """
-    Compute function for the Tavily Search (Tool) Block.
+    Compute function for the Web Search (Tool) Block.
     """
     in_val = self.get_interface(name='input_0')
     if in_val:
-        st.sidebar.write("Tavily Search block received input:", in_val)
-        out_val = f"Tavily Search result for: {in_val}"
-        self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Tavily Search block set output:", out_val)
-    else:
-        st.sidebar.write("Tavily Search block received no input.")
-
-def duckduckgo_search_compute(self):
-    """
-    Compute function for the DuckDuckGo Search (Tool) Block using Langchain.
-    """
-    in_val = self.get_interface(name='input_0')
-    if in_val:
-        st.sidebar.write("DuckDuckGo Search block received input:", in_val)
+        st.sidebar.write("Web Search block received input:", in_val)
         
-        # Use Langchain's DuckDuckGoSearchTool
-        search_tool = DuckDuckGoSearchRun()
-        out_val = search_tool.invoke(in_val)
+        # Initialize the TavilySearchResults with the API key from secrets
+        api_key = st.secrets["TAVILY_API_KEY"]
+        search = TavilySearchResults(
+            max_results=2, 
+            tavily_api_key=api_key
+        )
+        out_val = search.invoke({"query": str(in_val)})
         
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("DuckDuckGo Search block set output:", out_val)
+        st.sidebar.write("Web Search block set output:", out_val)
+        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
     else:
-        st.sidebar.write("DuckDuckGo Search block received no input.")
+        st.sidebar.write("Web Search block received no input.")
 
-
-###############################################################################
-# 3. Knowledge/Search Functions
-###############################################################################
 def pubmed_search_compute(self):
     """
     Compute function for the PubMed Search (Tool) Block.
     """
-
     in_val = self.get_interface(name='input_0')
     if in_val:
         st.sidebar.write("PubMed Search block received input:", in_val)
@@ -108,19 +89,6 @@ def pubmed_search_compute(self):
         st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
     else:
         st.sidebar.write("PubMed Search block received no input.")
-
-def yahoo_finance_news_compute(self):
-    """
-    Compute function for the Yahoo Finance News (Tool) Block.
-    """
-    in_val = self.get_interface(name='input_0')
-    if in_val:
-        tool = YahooFinanceNewsTool()   
-        out_val = tool.invoke(in_val)
-        self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Yahoo Finance News block set output:", out_val)
-    else:
-        st.sidebar.write("Yahoo Finance News block received no input.")
 
 def wikipedia_search_compute(self):
     """
@@ -282,15 +250,10 @@ def main_page():
     anthropic_block.add_output(name='output_0')
     anthropic_block.add_compute(invoke_anthropic)
 
-    tavily_block = Block(name='Tavily Search (Tool)')
-    tavily_block.add_input(name='input_0')
-    tavily_block.add_output(name='output_0')
-    tavily_block.add_compute(tavily_search_compute)
-
-    duckduckgo_block = Block(name='DuckDuckGo Search (Tool)')
-    duckduckgo_block.add_input(name='input_0')
-    duckduckgo_block.add_output(name='output_0')
-    duckduckgo_block.add_compute(duckduckgo_search_compute)
+    web_search_block = Block(name='Web Search (Tool)')
+    web_search_block.add_input(name='input_0')
+    web_search_block.add_output(name='output_0')
+    web_search_block.add_compute(web_search_compute)
 
     init_block = Block(name="Init Block")
     init_block.add_output(name="output_0")
@@ -310,11 +273,6 @@ def main_page():
     pubmed_block.add_input(name='input_0')
     pubmed_block.add_output(name='output_0')
     pubmed_block.add_compute(pubmed_search_compute)
-
-    yahoo_finance_news_block = Block(name='Yahoo Finance News (Tool)')
-    yahoo_finance_news_block.add_input(name='input_0')
-    yahoo_finance_news_block.add_output(name='output_0')
-    yahoo_finance_news_block.add_compute(yahoo_finance_news_compute)
 
     wikipedia_block = Block(name='Wikipedia Search (Tool)')
     wikipedia_block.add_input(name='input_0')
@@ -354,10 +312,8 @@ def main_page():
             parser_block,
             init_block,
             anthropic_block,
-            tavily_block,
-            duckduckgo_block,
+            web_search_block,
             pubmed_block,
-            yahoo_finance_news_block,
             wikipedia_block,
             final_output,
             *all_prompt_blocks  # add all generated prompt blocks
