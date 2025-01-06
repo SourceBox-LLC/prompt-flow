@@ -5,6 +5,8 @@ import re  # For parsing variables from the prompt template
 from langchain_community.tools import DuckDuckGoSearchRun 
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities import WikipediaAPIWrapper
 import boto3
 import json
 
@@ -120,7 +122,24 @@ def yahoo_finance_news_compute(self):
     else:
         st.sidebar.write("Yahoo Finance News block received no input.")
 
-
+def wikipedia_search_compute(self):
+    """
+    Compute function for the Wikipedia Search (Tool) Block.
+    """
+    in_val = self.get_interface(name='input_0')
+    if in_val:
+        st.sidebar.write("Wikipedia Search block received input:", in_val)
+        
+        # Initialize the WikipediaAPIWrapper and WikipediaQueryRun
+        api_wrapper = WikipediaAPIWrapper()
+        search_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
+        out_val = search_tool.invoke(in_val)
+        
+        self.set_interface(name='output_0', value=out_val)
+        st.sidebar.write("Wikipedia Search block set output:", out_val)
+        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
+    else:
+        st.sidebar.write("Wikipedia Search block received no input.")
 
 def init_block_compute(self):
     """
@@ -297,6 +316,11 @@ def main_page():
     yahoo_finance_news_block.add_output(name='output_0')
     yahoo_finance_news_block.add_compute(yahoo_finance_news_compute)
 
+    wikipedia_block = Block(name='Wikipedia Search (Tool)')
+    wikipedia_block.add_input(name='input_0')
+    wikipedia_block.add_output(name='output_0')
+    wikipedia_block.add_compute(wikipedia_search_compute)
+
     # ------------------------------------------------
     # Create a Prompt block PER template in session_state
     # ------------------------------------------------
@@ -334,6 +358,7 @@ def main_page():
             duckduckgo_block,
             pubmed_block,
             yahoo_finance_news_block,
+            wikipedia_block,
             final_output,
             *all_prompt_blocks  # add all generated prompt blocks
         ],
