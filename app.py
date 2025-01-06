@@ -196,14 +196,11 @@ def replicate_block_compute(self):
     in_val = self.get_interface(name='input_0')
     if in_val:
         st.sidebar.write("Replicate Block received input:", in_val)
-        # Dummy processing logic to replicate input into three parts
-        part1 = f"Part 1: {in_val}"
-        part2 = f"Part 2: {in_val}"
-        part3 = f"Part 3: {in_val}"
-        self.set_interface(name='output_1', value=part1)
-        self.set_interface(name='output_2', value=part2)
-        self.set_interface(name='output_3', value=part3)
-        st.sidebar.write("Replicate Block set outputs:", part1, part2, part3)
+        # Send the same input to all three outputs
+        self.set_interface(name='output_1', value=in_val)
+        self.set_interface(name='output_2', value=in_val)
+        self.set_interface(name='output_3', value=in_val)
+        st.sidebar.write("Replicate Block set outputs:", in_val, in_val, in_val)
     else:
         st.sidebar.write("Replicate Block received no input.")
 
@@ -230,6 +227,8 @@ def combine_block_compute(self):
         st.sidebar.write("Combine Block set output:", combined_val)
     else:
         st.sidebar.write("Combine Block received no valid inputs.")
+    #Parses the prompt template and extracts all variables enclosed in curly braces.
+
 
 ###############################################################################
 # 2. Utility Functions
