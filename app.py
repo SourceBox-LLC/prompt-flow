@@ -9,7 +9,7 @@ import boto3
 import json
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-# --- NEW IMPORT for ChatBedrock-based call_llm ---
+from auth import login_page, logout, get_user_info  # Import the login and logout functions
 from llm import call_llm
 
 ###############################################################################
@@ -53,9 +53,10 @@ def invoke_titan(self):
 def invoke_meta_llama(self):
     in_val = self.get_interface(name='input_0')
     if in_val:
+        st.sidebar.write("Meta LLama block received input:", in_val)
         out_val = call_llm(prompt=in_val, model="meta.llama3-8b-instruct-v1:0")
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Meta block set output:", out_val)
+        st.sidebar.write("Meta LLama block set output:", out_val)
     else:
         st.sidebar.write("Meta block received no input.")
 
@@ -455,6 +456,11 @@ def main():
     """
     Manages page navigation between the main page and the prompt templates page.
     """
+    # Check if the user is logged in
+    if "user_info" not in st.session_state:
+        login_page()  # Redirect to login page if not logged in
+        return
+
     if "page" not in st.session_state:
         st.session_state["page"] = "home"
 
@@ -468,6 +474,11 @@ def main():
         prompt_templates_app()
     else:
         main_page()
+
+    if st.sidebar.button("Logout"):
+        logout()  # Call the logout function
+        st.session_state.pop("user_info", None)  # Clear user info from session state
+        st.rerun()
 
 ###############################################################################
 # 7. Entry Point
