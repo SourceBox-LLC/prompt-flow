@@ -50,6 +50,16 @@ def invoke_titan(self):
         st.sidebar.write("Anthropic block received no input.")
 
 
+def invoke_meta_llama(self):
+    in_val = self.get_interface(name='input_0')
+    if in_val:
+        out_val = call_llm(prompt=in_val, model="meta.llama3-8b-instruct-v1:0")
+        self.set_interface(name='output_0', value=out_val)
+        st.sidebar.write("Meta block set output:", out_val)
+    else:
+        st.sidebar.write("Meta block received no input.")
+
+
 
 def feed_compute(self):
     """
@@ -301,6 +311,11 @@ def main_page():
     titan_block.add_output(name='output_0')
     titan_block.add_compute(invoke_titan)
 
+    llama_block = Block(name='Meta (Model)')
+    llama_block.add_input(name='input_0')
+    llama_block.add_output(name='output_0')
+    llama_block.add_compute(invoke_meta_llama)
+
     web_search_block = Block(name='Web Search (Tool)')
     web_search_block.add_input(name='input_0')
     web_search_block.add_output(name='output_0')
@@ -377,6 +392,7 @@ def main_page():
             pack_block,
             combine_block,
             titan_block,
+            llama_block,
             *all_prompt_blocks
         ],
         key=st.session_state["barfi_key"]
