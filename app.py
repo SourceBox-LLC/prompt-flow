@@ -25,12 +25,31 @@ def invoke_anthropic(self):
         st.sidebar.write("Anthropic block received input:", in_val)
         
         # Call the LLM using the input value
-        out_val = call_llm(prompt=in_val)
+        out_val = call_llm(prompt=in_val, model="anthropic.claude-3-sonnet-20240229-v1:0")
         
         self.set_interface(name='output_0', value=out_val)
         st.sidebar.write("Anthropic block set output:", out_val)
     else:
         st.sidebar.write("Anthropic block received no input.")
+
+
+def invoke_titan(self):
+    """
+    Compute function for the Anthropic (Model) Block.
+    """
+    in_val = self.get_interface(name='input_0')
+    if in_val:
+        st.sidebar.write("Anthropic block received input:", in_val)
+        
+        # Call the LLM using the input value
+        out_val = call_llm(prompt=in_val, model="amazon.titan-text-premier-v1:0")
+        
+        self.set_interface(name='output_0', value=out_val)
+        st.sidebar.write("Anthropic block set output:", out_val)
+    else:
+        st.sidebar.write("Anthropic block received no input.")
+
+
 
 def feed_compute(self):
     """
@@ -277,6 +296,11 @@ def main_page():
     anthropic_block.add_output(name='output_0')
     anthropic_block.add_compute(invoke_anthropic)
 
+    titan_block = Block(name='Titan (Model)')
+    titan_block.add_input(name='input_0')
+    titan_block.add_output(name='output_0')
+    titan_block.add_compute(invoke_titan)
+
     web_search_block = Block(name='Web Search (Tool)')
     web_search_block.add_input(name='input_0')
     web_search_block.add_output(name='output_0')
@@ -352,6 +376,7 @@ def main_page():
             final_output,
             pack_block,
             combine_block,
+            titan_block,
             *all_prompt_blocks
         ],
         key=st.session_state["barfi_key"]
