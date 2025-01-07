@@ -1,6 +1,6 @@
 from langchain_aws import ChatBedrock
 
-def call_llm(prompt: str, model="meta.llama3-8b-instruct-v1:0", temperature=0.7) -> str:
+def call_llm(prompt: str, model="mistral.mistral-large-2402-v1:0", temperature=0.7) -> str:
     llm = ChatBedrock(
         model_id=model,
         model_kwargs=dict(temperature=temperature),

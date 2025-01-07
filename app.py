@@ -60,6 +60,15 @@ def invoke_meta_llama(self):
         st.sidebar.write("Meta block received no input.")
 
 
+def invoke_mistral(self):
+    in_val = self.get_interface(name='input_0')
+    if in_val:
+        out_val = call_llm(prompt=in_val, model="mistral.mistral-large-2402-v1:0")
+        self.set_interface(name='output_0', value=out_val)
+        st.sidebar.write("Mistral block set output:", out_val)
+    else:
+        st.sidebar.write("Mistral block received no input.")
+
 
 def feed_compute(self):
     """
@@ -316,6 +325,11 @@ def main_page():
     llama_block.add_output(name='output_0')
     llama_block.add_compute(invoke_meta_llama)
 
+    mistral_block = Block(name='Mistral (Model)')
+    mistral_block.add_input(name='input_0')
+    mistral_block.add_output(name='output_0')
+    mistral_block.add_compute(invoke_mistral)
+
     web_search_block = Block(name='Web Search (Tool)')
     web_search_block.add_input(name='input_0')
     web_search_block.add_output(name='output_0')
@@ -393,6 +407,7 @@ def main_page():
             combine_block,
             titan_block,
             llama_block,
+            mistral_block,
             *all_prompt_blocks
         ],
         key=st.session_state["barfi_key"]
