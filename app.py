@@ -9,6 +9,9 @@ import boto3
 import json
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+# --- NEW IMPORT for ChatBedrock-based call_llm ---
+from llm import call_llm
+
 ###############################################################################
 # 1. Define Compute Functions
 ###############################################################################
@@ -189,7 +192,6 @@ def pack_block_compute(self):
     else:
         st.sidebar.write("Pack Block received no input.")
 
-
 def combine_block_compute(self):
     """
     Compute function for the Combine Block.
@@ -213,8 +215,6 @@ def combine_block_compute(self):
         st.sidebar.write("Combine Block set output:", combined_val)
     else:
         st.sidebar.write("Combine Block received no valid inputs.")
-    #Parses the prompt template and extracts all variables enclosed in curly braces.
-
 
 ###############################################################################
 # 2. Utility Functions
@@ -223,12 +223,6 @@ def combine_block_compute(self):
 def parse_template_variables(prompt_template: str):
     """
     Parses the prompt template and extracts all variables enclosed in curly braces.
-
-    Args:
-        prompt_template (str): The prompt template containing placeholders.
-
-    Returns:
-        List[str]: A list of variable names.
     """
     return re.findall(r'\{(.*?)\}', prompt_template)
 
@@ -244,21 +238,17 @@ def main_page():
     """
     st.sidebar.title("Barfi")
 
+    # Use a single stable key so Barfi reuses the same canvas across re-runs
     if "barfi_key" not in st.session_state:
         st.session_state["barfi_key"] = "barfi_default"
 
-    # --------------------------------------------
-    # Removed all "test_flow_active" chat logic
-    # --------------------------------------------
-
     reset_canvas = st.sidebar.button("Reset Canvas")
     if reset_canvas:
-        # Flip to a new key so that Barfi doesn't load old state
+        # If clicked, set a new key so Barfi resets the layout
         st.session_state["barfi_key"] = "barfi_reset"
         st.rerun()
 
-    # (Optional) You can still show a dropdown of all saved templates in the sidebar
-    # for informational purposes, but it will NOT affect the block creation below.
+    # Show a dropdown of all saved templates, if any
     template_names = []
     if "templates" in st.session_state and st.session_state["templates"]:
         template_names = list(st.session_state["templates"].keys())
@@ -271,17 +261,13 @@ def main_page():
         st.sidebar.write("You selected:", selected_template)
         st.sidebar.json(st.session_state["templates"][selected_template])
 
-    # ---------------------------------------------
-    # Removed the "Test Flow" button and logic
-    # ---------------------------------------------
-
-    # New "Initialize Flow" elements in the sidebar
+    # Optional: Prompt for initialization
     st.sidebar.write("Initialize Flow")
     st.sidebar.text_input("Enter your prompt here", key="init_input")
 
-    # ---------------------------
-    # Create Other Existing Blocks
-    # ---------------------------
+    # -----------------------------------------------------------------
+    # Create the standard blocks: Final Output, Anthropic, Web Search, etc.
+    # -----------------------------------------------------------------
     final_output = Block(name="Final Output")
     final_output.add_input(name='input_0')
     final_output.add_compute(final_output_compute)
@@ -325,7 +311,6 @@ def main_page():
     pack_block.add_output(name='output_0')
     pack_block.add_compute(pack_block_compute)
 
-
     combine_block = Block(name='Combine Block')
     combine_block.add_input(name='input_1')
     combine_block.add_input(name='input_2')
@@ -342,25 +327,20 @@ def main_page():
             prompt_template = tmpl_data["prompt_template"]
             variables = parse_template_variables(prompt_template)
 
-            # Give each template a unique name, so they show up distinctly in the Barfi menu
             block_title = f"Prompt: {tmpl_name}"
             new_block = Block(name=block_title)
 
-            # Add input nodes for each variable
             for var in variables:
                 new_block.add_input(name=var)
 
-            # Add a single output node
             new_block.add_output(name='output_0')
-
-            # Assign the compute function
             new_block.add_compute(prompt_compute_factory(prompt_template, variables))
 
             all_prompt_blocks.append(new_block)
 
-    # -----------------------------
-    # Render Everything in Barfi
-    # -----------------------------
+    # -----------------------------------------------------------------
+    # Render everything in Barfi, with our stable key
+    # -----------------------------------------------------------------
     st_barfi(
         base_blocks=[
             parser_block,
@@ -372,7 +352,7 @@ def main_page():
             final_output,
             pack_block,
             combine_block,
-            *all_prompt_blocks  # add all generated prompt blocks
+            *all_prompt_blocks
         ],
         key=st.session_state["barfi_key"]
     )
@@ -386,10 +366,6 @@ def prompt_compute_factory(prompt_template: str, variables: list):
     Creates a compute function for the Prompt Block based on the template and variables.
     """
     def prompt_compute(self):
-        """
-        Compute function for the dynamic Prompt Block.
-        It collects inputs for each variable and generates the final prompt.
-        """
         # Collect inputs for each variable
         input_values = {}
         for var in variables:
@@ -414,42 +390,6 @@ def prompt_compute_factory(prompt_template: str, variables: list):
 
     return prompt_compute
 
-###############################################################################
-# 5. Define the Call LLM Function
-###############################################################################
-
-def call_llm(prompt: str, model="anthropic.claude-3-5-sonnet-20240620-v1:0", temperature=0.7) -> str:
-    """
-    Example LLM call using AWS Bedrock's Anthropic model: anthropic.claude-3-5-sonnet-20240620-v1:0.
-    Adjust the JSON structure based on the actual model's response in your environment.
-    """
-    bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
-    try:
-        body = {
-            "prompt": prompt,
-            "temperature": temperature,
-        }
-
-        response = bedrock.invoke_model(
-            modelId=model,
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps(body),
-        )
-
-        response_body = response["body"].read()
-        result = json.loads(response_body)
-
-        # Adapt if the response structure changes
-        if "completions" in result and len(result["completions"]) > 0:
-            generated_text = result["completions"][0]["data"]["text"]
-        else:
-            generated_text = "No output from model."
-
-        return generated_text.strip()
-
-    except Exception as e:
-        return f"Error calling Bedrock model: {e}"
 
 ###############################################################################
 # 6. Page Navigation
@@ -459,7 +399,6 @@ def main():
     """
     Manages page navigation between the main page and the prompt templates page.
     """
-    # Initialize session state
     if "page" not in st.session_state:
         st.session_state["page"] = "home"
 

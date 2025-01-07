@@ -1,13 +1,7 @@
-# prompt_templates.py
-
 import streamlit as st
-import boto3
 import json
+from llm import call_llm
 
-def call_llm(prompt: str, model="cohere.command-r-plus-v1:0", temperature=0.7) -> str:
-    ...
-    # Your LLM call logic here
-    ...
 
 def prompt_templates_app():
     """
@@ -21,8 +15,6 @@ def prompt_templates_app():
 
     st.title("Prompt Tester with AWS Bedrock")
 
-    # 2. Existing prompt templates code
-    # --------------------------------------------------------
     st.subheader("Template Name")
     template_name = st.text_input("Enter a name for your template", "Template 1")
 
@@ -39,18 +31,21 @@ def prompt_templates_app():
         value='{"name": "Alice", "hobby": "coding"}'
     )
 
-    model_name = st.text_input("Model Name (e.g., cohere.command-r-plus-v1:0)", 
-                               "cohere.command-r-plus-v1:0")
-    temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, 
-                            value=0.7, step=0.1)
+    # Replace text input with a select box that only has one option
+    model_name = st.selectbox(
+        "Model Name",
+        ["anthropic.claude-3-sonnet-20240229-v1:0"]
+    )
 
-    # 3. Save Template Button
+    temperature = st.slider(
+        "Temperature", 
+        min_value=0.0, max_value=1.0, value=0.7, step=0.1
+    )
+
     if st.button("Save Template"):
-        # Initialize 'templates' dict in session_state if needed
         if "templates" not in st.session_state:
             st.session_state["templates"] = {}
 
-        # Save the template data into session_state["templates"]
         st.session_state["templates"][template_name] = {
             "prompt_template": prompt_template,
             "placeholder_json": placeholder_json,
@@ -64,7 +59,6 @@ def prompt_templates_app():
         st.title("Prompt Tester with AWS Bedrock")
         st.subheader("Prompt Template")
 
-    # Generate button
     if st.sidebar.button("Generate"):
         try:
             placeholders = json.loads(placeholder_json)

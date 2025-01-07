@@ -8,12 +8,8 @@ def call_llm(prompt: str, model="anthropic.claude-3-sonnet-20240229-v1:0", tempe
     )
 
     messages = [
-        (
-            "system",
-            "You are a helpful assistant",
-        ),
+        ("system", "You are a helpful assistant"),
         ("human", prompt),
     ]
     ai_msg = llm.invoke(messages)
     return ai_msg
-
