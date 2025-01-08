@@ -9,7 +9,7 @@ import boto3
 import json
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from auth import login_page, logout, get_user_info  # Import the login and logout functions
+from auth import login_page, logout   # Import the login and logout functions
 from llm import call_llm
 
 ###############################################################################
@@ -456,9 +456,10 @@ def main():
     """
     Manages page navigation between the main page and the prompt templates page.
     """
+    
     # Check if the user is logged in
-    if "user_info" not in st.session_state:
-        login_page()  # Redirect to login page if not logged in
+    if not st.session_state.get("logged_in", False):
+        login_page()
         return
 
     if "page" not in st.session_state:
@@ -477,7 +478,6 @@ def main():
 
     if st.sidebar.button("Logout"):
         logout()  # Call the logout function
-        st.session_state.pop("user_info", None)  # Clear user info from session state
         st.rerun()
 
 ###############################################################################
