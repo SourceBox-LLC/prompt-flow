@@ -55,6 +55,18 @@ def prompt_templates_app():
 
         st.success(f"Template '{template_name}' has been saved!")
 
+    if "templates" in st.session_state and st.session_state["templates"]:
+        st.subheader("Saved Templates")
+        for temp_name in list(st.session_state["templates"].keys()):
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.write(f"**{temp_name}**")
+            with col2:
+                if st.button("Delete", key=f"delete_{temp_name}"):
+                    del st.session_state["templates"][temp_name]
+                    st.success(f"Template '{temp_name}' has been deleted!")
+                    st.rerun()
+
     with st.sidebar:
         st.title("Prompt Tester with AWS Bedrock")
         st.subheader("Prompt Template")
