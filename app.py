@@ -29,6 +29,7 @@ def invoke_anthropic(self):
         
         self.set_interface(name='output_0', value=out_val)
         st.sidebar.write("Anthropic block set output:", out_val)
+        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
     else:
         st.sidebar.write("Anthropic block received no input.")
 
@@ -39,15 +40,16 @@ def invoke_titan(self):
     """
     in_val = self.get_interface(name='input_0')
     if in_val:
-        st.sidebar.write("Anthropic block received input:", in_val)
+        st.sidebar.write("Titan block received input:", in_val)
         
         # Call the LLM using the input value
         out_val = call_llm(prompt=in_val, model="amazon.titan-text-premier-v1:0")
         
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Anthropic block set output:", out_val)
+        st.sidebar.write("Titan block set output:", out_val)
+        st.sidebar.json(out_val)  # Display the output in JSON format
     else:
-        st.sidebar.write("Anthropic block received no input.")
+        st.sidebar.write("Titan block received no input.")
 
 
 def invoke_meta_llama(self):
@@ -57,6 +59,7 @@ def invoke_meta_llama(self):
         out_val = call_llm(prompt=in_val, model="meta.llama3-8b-instruct-v1:0")
         self.set_interface(name='output_0', value=out_val)
         st.sidebar.write("Meta LLama block set output:", out_val)
+        st.sidebar.json(out_val)  # Added JSON display
     else:
         st.sidebar.write("Meta block received no input.")
 
@@ -67,6 +70,7 @@ def invoke_mistral(self):
         out_val = call_llm(prompt=in_val, model="mistral.mistral-large-2402-v1:0")
         self.set_interface(name='output_0', value=out_val)
         st.sidebar.write("Mistral block set output:", out_val)
+        st.sidebar.json(out_val)  # Added JSON display
     else:
         st.sidebar.write("Mistral block received no input.")
 
@@ -89,6 +93,7 @@ def final_output_compute(self):
     val = self.get_interface(name='input_0')
     if val:
         st.sidebar.write("Final output block received input:", val)
+        st.sidebar.json(val)  # Added JSON display
     else:
         st.sidebar.write("Final output block received no input.")
 
@@ -124,11 +129,17 @@ def pubmed_search_compute(self):
         
         # Use Langchain's PubMedSearchTool
         search_tool = PubmedQueryRun()
-        out_val = search_tool.invoke(in_val)
+        raw_output = search_tool.invoke(in_val)
+        
+        # Convert the output to a structured JSON format
+        out_val = {
+            "query": in_val,
+            "results": raw_output.split("\n\n")  # Split into separate results
+        }
         
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("PubMed Search block set output:", out_val)
-        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
+        st.sidebar.write("PubMed Search block set output:")
+        st.sidebar.json(out_val)  # Now displays properly formatted JSON
     else:
         st.sidebar.write("PubMed Search block received no input.")
 
@@ -143,11 +154,17 @@ def wikipedia_search_compute(self):
         # Initialize the WikipediaAPIWrapper and WikipediaQueryRun
         api_wrapper = WikipediaAPIWrapper()
         search_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
-        out_val = search_tool.invoke(in_val)
+        raw_output = search_tool.invoke(in_val)
+        
+        # Convert the output to a structured JSON format
+        out_val = {
+            "query": in_val,
+            "results": raw_output.split("\n\n")  # Split into separate results
+        }
         
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Wikipedia Search block set output:", out_val)
-        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
+        st.sidebar.write("Wikipedia Search block set output:")
+        st.sidebar.json(out_val)  # Now displays properly formatted JSON
     else:
         st.sidebar.write("Wikipedia Search block received no input.")
 
@@ -252,6 +269,7 @@ def combine_block_compute(self):
         st.sidebar.write("Combine Block received inputs:", inputs)
         self.set_interface(name='output_0', value=combined_val)
         st.sidebar.write("Combine Block set output:", combined_val)
+        st.sidebar.json(combined_val)  # Added JSON display
     else:
         st.sidebar.write("Combine Block received no valid inputs.")
 
