@@ -24,53 +24,106 @@ def invoke_anthropic(self):
     if in_val:
         st.sidebar.write("Anthropic block received input:", in_val)
         
+        # Handle input that might be a dictionary or string
+        prompt = in_val['output'] if isinstance(in_val, dict) and 'output' in in_val else str(in_val)
+        
         # Call the LLM using the input value
-        out_val = call_llm(prompt=in_val, model="anthropic.claude-3-sonnet-20240229-v1:0")
+        raw_output = call_llm(prompt=prompt, model="anthropic.claude-3-sonnet-20240229-v1:0")
+        
+        # Format the output as JSON
+        out_val = {
+            "input": prompt,
+            "model": "anthropic.claude-3-sonnet-20240229-v1:0",
+            "output": raw_output
+        }
         
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Anthropic block set output:", out_val)
-        st.sidebar.json(out_val)  # Display the output in JSON format for better visibility
+        st.sidebar.write("### Anthropic Block Output:")
+        st.sidebar.json(out_val)
     else:
         st.sidebar.write("Anthropic block received no input.")
 
 
 def invoke_titan(self):
     """
-    Compute function for the Anthropic (Model) Block.
+    Compute function for the Titan (Model) Block.
     """
     in_val = self.get_interface(name='input_0')
     if in_val:
         st.sidebar.write("Titan block received input:", in_val)
         
+        # Handle input that might be a dictionary or string
+        prompt = in_val['output'] if isinstance(in_val, dict) and 'output' in in_val else str(in_val)
+        
         # Call the LLM using the input value
-        out_val = call_llm(prompt=in_val, model="amazon.titan-text-premier-v1:0")
+        raw_output = call_llm(prompt=prompt, model="amazon.titan-text-premier-v1:0")
+        
+        # Format the output as JSON
+        out_val = {
+            "input": prompt,
+            "model": "amazon.titan-text-premier-v1:0",
+            "output": raw_output
+        }
         
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Titan block set output:", out_val)
-        st.sidebar.json(out_val)  # Display the output in JSON format
+        st.sidebar.write("### Titan Block Output:")
+        st.sidebar.json(out_val)
     else:
         st.sidebar.write("Titan block received no input.")
 
 
 def invoke_meta_llama(self):
+    """
+    Compute function for the Meta LLama (Model) Block.
+    """
     in_val = self.get_interface(name='input_0')
     if in_val:
         st.sidebar.write("Meta LLama block received input:", in_val)
-        out_val = call_llm(prompt=in_val, model="meta.llama3-8b-instruct-v1:0")
+        
+        # Handle input that might be a dictionary or string
+        prompt = in_val['output'] if isinstance(in_val, dict) and 'output' in in_val else str(in_val)
+        
+        # Call the LLM using the input value
+        raw_output = call_llm(prompt=prompt, model="meta.llama3-8b-instruct-v1:0")
+        
+        # Format the output as JSON
+        out_val = {
+            "input": prompt,
+            "model": "meta.llama3-8b-instruct-v1:0",
+            "output": raw_output
+        }
+        
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Meta LLama block set output:", out_val)
-        st.sidebar.json(out_val)  # Added JSON display
+        st.sidebar.write("### Meta LLama Block Output:")
+        st.sidebar.json(out_val)
     else:
-        st.sidebar.write("Meta block received no input.")
+        st.sidebar.write("Meta LLama block received no input.")
 
 
 def invoke_mistral(self):
+    """
+    Compute function for the Mistral (Model) Block.
+    """
     in_val = self.get_interface(name='input_0')
     if in_val:
-        out_val = call_llm(prompt=in_val, model="mistral.mistral-large-2402-v1:0")
+        st.sidebar.write("Mistral block received input:", in_val)
+        
+        # Handle input that might be a dictionary or string
+        prompt = in_val['output'] if isinstance(in_val, dict) and 'output' in in_val else str(in_val)
+        
+        # Call the LLM using the input value
+        raw_output = call_llm(prompt=prompt, model="mistral.mistral-large-2402-v1:0")
+        
+        # Format the output as JSON
+        out_val = {
+            "input": prompt,
+            "model": "mistral.mistral-large-2402-v1:0",
+            "output": raw_output
+        }
+        
         self.set_interface(name='output_0', value=out_val)
-        st.sidebar.write("Mistral block set output:", out_val)
-        st.sidebar.json(out_val)  # Added JSON display
+        st.sidebar.write("### Mistral Block Output:")
+        st.sidebar.json(out_val)
     else:
         st.sidebar.write("Mistral block received no input.")
 
@@ -184,55 +237,6 @@ def init_block_compute(self):
     else:
         st.sidebar.write("No input provided in Init Block.")
 
-def parser_block_compute(self):
-    """
-    Compute function for the Parser Block.
-    """
-    selected_options = st.multiselect(
-        "Select parsing options:",
-        options=["{}", "[]", "<>", "()", "''", '""'],
-        default=["{}"]
-    )
-    st.sidebar.write("Selected parsing options:", selected_options)
-    
-    # Input
-    in_val = self.get_interface(name='input_0')
-    if not in_val:
-        st.sidebar.write("No input to parse.")
-        for node in ['curly', 'square', 'angle', 'paren', 'single_quote', 'double_quote']:
-            self.set_interface(name=node, value=None)
-        return
-
-    # For each bracket type, either produce a 'parsed' output or None
-    if "{}" in selected_options:
-        self.set_interface(name='curly', value=f"Parsed Curly: {in_val}")
-    else:
-        self.set_interface(name='curly', value=None)
-
-    if "[]" in selected_options:
-        self.set_interface(name='square', value=f"Parsed Square: {in_val}")
-    else:
-        self.set_interface(name='square', value=None)
-
-    if "<>" in selected_options:
-        self.set_interface(name='angle', value=f"Parsed Angle: {in_val}")
-    else:
-        self.set_interface(name='angle', value=None)
-
-    if "()" in selected_options:
-        self.set_interface(name='paren', value=f"Parsed Paren: {in_val}")
-    else:
-        self.set_interface(name='paren', value=None)
-
-    if "''" in selected_options:
-        self.set_interface(name='single_quote', value=f"Parsed Single Quotes: {in_val}")
-    else:
-        self.set_interface(name='single_quote', value=None)
-
-    if '""' in selected_options:
-        self.set_interface(name='double_quote', value=f"Parsed Double Quotes: {in_val}")
-    else:
-        self.set_interface(name='double_quote', value=None)
 
 def pack_block_compute(self):
     """
@@ -358,16 +362,6 @@ def main_page():
     init_block.add_output(name="output_0")
     init_block.add_compute(init_block_compute)
 
-    parser_block = Block(name="Parser Block")
-    parser_block.add_input(name='input_0')
-    parser_block.add_output(name='curly {}')
-    parser_block.add_output(name='square []')
-    parser_block.add_output(name='angle <>')
-    parser_block.add_output(name='paren ()')
-    parser_block.add_output(name='single_quote \'\'')
-    parser_block.add_output(name='double_quote \"\"')
-    parser_block.add_compute(parser_block_compute)
-
     pubmed_block = Block(name='PubMed Search (Tool)')
     pubmed_block.add_input(name='input_0')
     pubmed_block.add_output(name='output_0')
@@ -415,7 +409,6 @@ def main_page():
     # -----------------------------------------------------------------
     st_barfi(
         base_blocks=[
-            parser_block,
             init_block,
             anthropic_block,
             web_search_block,
