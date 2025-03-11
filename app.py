@@ -298,6 +298,16 @@ def main_page():
     Creates one Prompt block per template (instead of one global block).
     """
     st.sidebar.title("Barfi")
+    
+    # Check login status
+    login_status = st.session_state.get("logged_in", False)
+    
+    # Display Pack Block availability info with more visibility
+    if login_status:
+        st.sidebar.success("✅ Pack Block is AVAILABLE - You are logged in!")
+    else:
+        st.sidebar.warning("⚠️ Pack Block is UNAVAILABLE - Login required")
+        st.sidebar.info("Login using the Authentication section below to access the Pack Block")
 
     # Use a single stable key so Barfi reuses the same canvas across re-runs
     if "barfi_key" not in st.session_state:
@@ -372,11 +382,6 @@ def main_page():
     wikipedia_block.add_output(name='output_0')
     wikipedia_block.add_compute(wikipedia_search_compute)
 
-    pack_block = Block(name='Pack Block')
-    pack_block.add_input(name='input_0')
-    pack_block.add_output(name='output_0')
-    pack_block.add_compute(pack_block_compute)
-
     combine_block = Block(name='Combine Block')
     combine_block.add_input(name='input_1')
     combine_block.add_input(name='input_2')
@@ -384,10 +389,36 @@ def main_page():
     combine_block.add_output(name='output_0')
     combine_block.add_compute(combine_block_compute)
 
+    # -----------------------------------------------------------------
+    # Create base blocks list - all blocks except Pack Block which is conditional
+    # -----------------------------------------------------------------
+    base_blocks = [
+        init_block,
+        anthropic_block,
+        web_search_block,
+        pubmed_block,
+        wikipedia_block,
+        final_output,
+        combine_block,
+        titan_block,
+        llama_block,
+        mistral_block
+    ]
+    
+    # Conditionally add Pack Block if user is logged in
+    if login_status:
+        # Create Pack Block only when logged in
+        pack_block = Block(name='Pack Block')
+        pack_block.add_input(name='input_0')
+        pack_block.add_output(name='output_0')
+        pack_block.add_compute(pack_block_compute)
+        
+        # Add to base blocks
+        base_blocks.append(pack_block)
+    
     # ------------------------------------------------
     # Create a Prompt block PER template in session_state
     # ------------------------------------------------
-    all_prompt_blocks = []
     if "templates" in st.session_state and st.session_state["templates"]:
         for tmpl_name, tmpl_data in st.session_state["templates"].items():
             prompt_template = tmpl_data["prompt_template"]
@@ -402,26 +433,13 @@ def main_page():
             new_block.add_output(name='output_0')
             new_block.add_compute(prompt_compute_factory(prompt_template, variables))
 
-            all_prompt_blocks.append(new_block)
+            base_blocks.append(new_block)
 
     # -----------------------------------------------------------------
     # Render everything in Barfi, with our stable key
     # -----------------------------------------------------------------
     st_barfi(
-        base_blocks=[
-            init_block,
-            anthropic_block,
-            web_search_block,
-            pubmed_block,
-            wikipedia_block,
-            final_output,
-            pack_block,
-            combine_block,
-            titan_block,
-            llama_block,
-            mistral_block,
-            *all_prompt_blocks
-        ],
+        base_blocks=base_blocks,
         key=st.session_state["barfi_key"]
     )
 
@@ -467,15 +485,50 @@ def main():
     """
     Manages page navigation between the main page and the prompt templates page.
     """
-    
-    # Check if the user is logged in
-    if not st.session_state.get("logged_in", False):
-        login_page()
-        return
-
+    # Set default page if not already set
     if "page" not in st.session_state:
         st.session_state["page"] = "home"
-
+    
+    # Display login status and controls in the sidebar
+    with st.sidebar:
+        st.write("---")
+        st.write("### Authentication")
+        
+        # Show login status
+        is_logged_in = st.session_state.get("logged_in", False)
+        st.write(f"**Status:** {'👤 Logged In' if is_logged_in else '🔒 Not Logged In'}")
+        
+        # Login/Logout controls
+        if not is_logged_in:
+            # Always show the login form when not logged in
+            st.write("### Login")
+            with st.form(key="persistent_login_form"):
+                username = st.text_input("Username", key="login_username")
+                password = st.text_input("Password", type="password", key="login_password")
+                login_submit = st.form_submit_button("Log In")
+                
+                if login_submit:
+                    if username and password:  # Any non-empty username/password will work
+                        # Update session state directly
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.success(f"Welcome, {username}!")
+                        st.experimental_rerun()
+                    else:
+                        st.error("Please enter both username and password")
+        else:
+            # Show username and logout button
+            st.write(f"**User:** {st.session_state.get('username', 'User')}")
+            if st.button("🚪 Logout", use_container_width=True):
+                # Clear session state on logout
+                st.session_state.logged_in = False
+                st.session_state.username = None
+                st.session_state.access_token = None
+                st.success("Logged out successfully")
+                st.experimental_rerun()
+        
+        st.write("---")
+    
     # Sidebar button to switch to Prompt Templates page
     if st.sidebar.button("Prompt Templates"):
         st.session_state["page"] = "prompt_templates"
@@ -487,13 +540,18 @@ def main():
     else:
         main_page()
 
-    if st.sidebar.button("Logout"):
-        logout()  # Call the logout function
-        st.rerun()
-
 ###############################################################################
 # 7. Entry Point
 ###############################################################################
 
 if __name__ == "__main__":
+    # Create session state variables if they don't exist
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    if 'username' not in st.session_state:
+        st.session_state.username = None
+    if 'access_token' not in st.session_state:
+        st.session_state.access_token = None
+        
+    # Display the main app
     main()

@@ -38,6 +38,9 @@ def login_page():
     if submit_button:
         logging.info("Login attempt for user: %s", username)
         
+        # Debug info before login attempt
+        st.sidebar.write(f"Before login attempt: {st.session_state.get('logged_in', False)}")
+        
         # Define the payload for the Lambda function
         payload = {
             "action": "LOGIN_USER",
@@ -72,6 +75,9 @@ def login_page():
             st.session_state.access_token = body['token']
             st.session_state.username = username
             logging.info("User %s logged in successfully.", username)
+            
+            # Debug info after successful login
+            st.sidebar.write(f"After login success: {st.session_state.get('logged_in', False)}")
 
             st.success("Logged in successfully!")
             st.rerun()  # Force re-run so we go to main page
@@ -84,8 +90,16 @@ def login_page():
 def logout():
     """Logs out the user and clears session state."""
     logging.info("User logged out.")
+    
+    # Debug info before logout
+    st.sidebar.write(f"Before logout: {st.session_state.get('logged_in', False)}")
+    
     st.session_state.logged_in = False
     st.session_state.access_token = None
     st.session_state.username = None
+    
+    # Debug info after logout
+    st.sidebar.write(f"After logout: {st.session_state.get('logged_in', False)}")
+    
     # Toggle the logout trigger (useful if you want to force a rerun on logout)
     st.session_state.logout_trigger = not st.session_state.logout_trigger

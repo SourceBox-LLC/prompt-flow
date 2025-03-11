@@ -1,17 +1,57 @@
 import streamlit as st
 import json
 from llm import call_llm
+from auth import login_page, logout  # Import auth functions
 
 
 def prompt_templates_app():
     """
     Renders the Prompt Templates UI.
     """
-
     # 1. Back button to go to main page
     if st.sidebar.button("Back to Main App"):
         st.session_state["page"] = "home"
         st.rerun()
+    
+    # Display login status and controls in the sidebar
+    with st.sidebar:
+        st.write("---")
+        st.write("### Authentication")
+        
+        # Show login status
+        is_logged_in = st.session_state.get("logged_in", False)
+        st.write(f"**Status:** {'👤 Logged In' if is_logged_in else '🔒 Not Logged In'}")
+        
+        # Login/Logout controls
+        if not is_logged_in:
+            # Always show the login form when not logged in
+            st.write("### Login")
+            with st.form(key="templates_login_form"):
+                username = st.text_input("Username", key="templates_username")
+                password = st.text_input("Password", type="password", key="templates_password")
+                login_submit = st.form_submit_button("Log In")
+                
+                if login_submit:
+                    if username and password:  # Any non-empty username/password will work
+                        # Update session state directly
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.success(f"Welcome, {username}!")
+                        st.rerun()
+                    else:
+                        st.error("Please enter both username and password")
+        else:
+            # Show username and logout button
+            st.write(f"**User:** {st.session_state.get('username', 'User')}")
+            if st.button("🚪 Logout", use_container_width=True):
+                # Clear session state on logout
+                st.session_state.logged_in = False
+                st.session_state.username = None
+                st.session_state.access_token = None
+                st.success("Logged out successfully")
+                st.rerun()
+        
+        st.write("---")
 
     st.title("Prompt Tester with AWS Bedrock")
 
