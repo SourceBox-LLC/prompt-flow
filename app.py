@@ -1,4 +1,12 @@
 import streamlit as st
+# Set page config at the very beginning of the script
+st.set_page_config(
+    page_title="Prompt Engineer Workbench",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 from barfi import st_barfi, Block
 from prompt_templates import prompt_templates_app
 import re  # For parsing variables from the prompt template
@@ -513,7 +521,7 @@ def main():
                         st.session_state.logged_in = True
                         st.session_state.username = username
                         st.success(f"Welcome, {username}!")
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Please enter both username and password")
         else:
@@ -525,15 +533,18 @@ def main():
                 st.session_state.username = None
                 st.session_state.access_token = None
                 st.success("Logged out successfully")
-                st.experimental_rerun()
+                st.rerun()
         
         st.write("---")
     
     # Sidebar button to switch to Prompt Templates page
-    if st.sidebar.button("Prompt Templates"):
+    if st.sidebar.button("Prompt Templates", use_container_width=True):
         st.session_state["page"] = "prompt_templates"
         st.rerun()
 
+    # Debugging - uncomment if needed
+    # st.sidebar.write(f"Current page: {st.session_state['page']}")
+    
     # Display the appropriate page based on session state
     if st.session_state["page"] == "prompt_templates":
         prompt_templates_app()
