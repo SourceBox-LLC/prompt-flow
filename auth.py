@@ -1,105 +1,198 @@
 import streamlit as st
-import boto3
+import requests
 import json
 import logging
 
-# --- 1) Initialize Session States ---
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# API Base URL - replace with your actual API URL
+API_BASE_URL = "http://127.0.0.1:5000"  # Update this with your actual API endpoint
+
+# --- Initialize Session States ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'access_token' not in st.session_state:
     st.session_state.access_token = None
 if 'username' not in st.session_state:
     st.session_state.username = None
-if 'logout_trigger' not in st.session_state:
-    st.session_state.logout_trigger = False
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+if 'email' not in st.session_state:
+    st.session_state.email = None
+if 'premium_status' not in st.session_state:
+    st.session_state.premium_status = False
 
-# --- 2) Initialize Boto3 Client (assuming st.secrets usage) ---
-ACCESS_KEY = st.secrets["ACCESS_KEY"]
-SECRET_KEY = st.secrets["SECRET_KEY"]
-REGION = st.secrets["REGION"]
-
-session = boto3.Session(
-    aws_access_key_id=ACCESS_KEY,
-    aws_secret_access_key=SECRET_KEY,
-    region_name=REGION
-)
-lambda_client = session.client('lambda')
-
-# --- 3) Login Page ---
-def login_page():
-    """Display a login form and handle user authentication."""
-    st.title("Login Page")
-
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit_button = st.form_submit_button("Login")
-
-    if submit_button:
-        logging.info("Login attempt for user: %s", username)
-        
-        # Debug info before login attempt
-        st.sidebar.write(f"Before login attempt: {st.session_state.get('logged_in', False)}")
-        
-        # Define the payload for the Lambda function
-        payload = {
-            "action": "LOGIN_USER",
-            "data": {
-                "username": username,
-                "password": password
-            }
-        }
-
-        # Invoke the Lambda function
-        try:
-            response = lambda_client.invoke(
-                FunctionName='sb-user-auth-sbUserAuthFunction-zjl3761VSGKj',  # Replace with your Lambda name
-                InvocationType='RequestResponse',
-                Payload=json.dumps(payload)
-            )
-            logging.info("Lambda function invoked successfully.")
-
-        except Exception as e:
-            logging.error("Error invoking Lambda function: %s", e)
-            st.error("An error occurred while processing your request.")
-            return
-
-        # Parse the Lambda response
-        response_payload = json.loads(response['Payload'].read())
-        logging.info("Received response from Lambda: %s", response_payload)
-
-        # If success, update session state
-        if response_payload.get('statusCode') == 200:
-            body = json.loads(response_payload['body'])
-            st.session_state.logged_in = True
-            st.session_state.access_token = body['token']
-            st.session_state.username = username
-            logging.info("User %s logged in successfully.", username)
-            
-            # Debug info after successful login
-            st.sidebar.write(f"After login success: {st.session_state.get('logged_in', False)}")
-
-            st.success("Logged in successfully!")
-            st.rerun()  # Force re-run so we go to main page
-
+def login_user(username, password):
+    """
+    Login with the Flask API
+    
+    Args:
+        username (str): Username or email
+        password (str): User password
+    
+    Returns:
+        bool: True if login successful, False otherwise
+    """
+    try:
+        # Prepare login data
+        login_data = {}
+        if "@" in username:  # Check if username is actually an email
+            login_data = {"email": username, "password": password}
         else:
-            logging.warning("Invalid login attempt for user: %s", username)
-            st.error("Invalid username or password.")
+            login_data = {"username": username, "password": password}
+        
+        # Make API request
+        response = requests.post(
+            f"{API_BASE_URL}/login",
+            json=login_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        # Check if login was successful
+        if response.status_code == 200:
+            data = response.json()
+            # Save user data in session state
+            st.session_state.logged_in = True
+            st.session_state.access_token = data.get('access_token')
+            st.session_state.username = data.get('username')
+            st.session_state.user_id = data.get('user_id')
+            st.session_state.email = data.get('email')
+            st.session_state.premium_status = data.get('premium_status', False)
+            logger.info(f"User '{username}' logged in successfully")
+            return True
+        else:
+            error_msg = response.json().get('message', 'Login failed')
+            logger.warning(f"Login failed for '{username}': {error_msg}")
+            return False
+    except Exception as e:
+        logger.error(f"Error during login: {str(e)}")
+        return False
 
-# --- 4) Logout ---
+def register_user(email, username, password):
+    """
+    Register a new user with the Flask API
+    
+    Args:
+        email (str): User email
+        username (str): Username
+        password (str): User password
+    
+    Returns:
+        tuple: (success (bool), message (str))
+    """
+    try:
+        # Prepare registration data
+        register_data = {
+            "email": email,
+            "username": username,
+            "password": password
+        }
+        
+        # Make API request
+        response = requests.post(
+            f"{API_BASE_URL}/register",
+            json=register_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        # Parse response
+        data = response.json()
+        
+        if response.status_code == 201:
+            logger.info(f"User '{username}' registered successfully")
+            return True, "Registration successful! You can now log in."
+        else:
+            error_msg = data.get('message', 'Registration failed')
+            logger.warning(f"Registration failed: {error_msg}")
+            return False, error_msg
+    except Exception as e:
+        logger.error(f"Error during registration: {str(e)}")
+        return False, f"An error occurred: {str(e)}"
+
+def get_user_profile():
+    """
+    Get current user profile data
+    
+    Returns:
+        dict: User profile data or None if not logged in or error
+    """
+    if not st.session_state.logged_in or not st.session_state.access_token:
+        return None
+        
+    try:
+        # Make API request with JWT token
+        response = requests.get(
+            f"{API_BASE_URL}/user",
+            headers={
+                "Authorization": f"Bearer {st.session_state.access_token}",
+                "Content-Type": "application/json"
+            }
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.warning("Failed to get user profile")
+            return None
+    except Exception as e:
+        logger.error(f"Error getting user profile: {str(e)}")
+        return None
+
 def logout():
     """Logs out the user and clears session state."""
-    logging.info("User logged out.")
+    logger.info("User logged out")
     
-    # Debug info before logout
-    st.sidebar.write(f"Before logout: {st.session_state.get('logged_in', False)}")
-    
+    # Clear session state
     st.session_state.logged_in = False
     st.session_state.access_token = None
     st.session_state.username = None
+    st.session_state.user_id = None
+    st.session_state.email = None
+    st.session_state.premium_status = False
+
+def login_page():
+    """Display a login form and handle user authentication."""
+    st.title("Login Page")
     
-    # Debug info after logout
-    st.sidebar.write(f"After logout: {st.session_state.get('logged_in', False)}")
+    # Create tabs for login and registration
+    login_tab, register_tab = st.tabs(["Login", "Register"])
     
-    # Toggle the logout trigger (useful if you want to force a rerun on logout)
-    st.session_state.logout_trigger = not st.session_state.logout_trigger
+    with login_tab:
+        with st.form("login_form"):
+            username = st.text_input("Username or Email")
+            password = st.text_input("Password", type="password")
+            submit_button = st.form_submit_button("Login")
+            
+            if submit_button:
+                if not username or not password:
+                    st.error("Please enter both username/email and password")
+                else:
+                    with st.spinner("Logging in..."):
+                        if login_user(username, password):
+                            st.success(f"Welcome, {st.session_state.username}!")
+                            st.rerun()
+                        else:
+                            st.error("Invalid username or password")
+    
+    with register_tab:
+        with st.form("register_form"):
+            reg_email = st.text_input("Email")
+            reg_username = st.text_input("Username")
+            reg_password = st.text_input("Password", type="password")
+            reg_confirm_password = st.text_input("Confirm Password", type="password")
+            register_button = st.form_submit_button("Register")
+            
+            if register_button:
+                if not reg_email or not reg_username or not reg_password:
+                    st.error("Please fill in all fields")
+                elif reg_password != reg_confirm_password:
+                    st.error("Passwords do not match")
+                else:
+                    with st.spinner("Registering..."):
+                        success, message = register_user(reg_email, reg_username, reg_password)
+                        if success:
+                            st.success(message)
+                        else:
+                            st.error(message)

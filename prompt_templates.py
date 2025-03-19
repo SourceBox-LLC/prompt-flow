@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 from llm import call_llm
-from auth import login_page, logout  # Import auth functions
+from auth import login_page, logout, login_user  # Import auth functions
 import time
 
 def prompt_templates_app():
@@ -72,31 +72,33 @@ def prompt_templates_app():
         if not is_logged_in:
             with st.expander("Log In", expanded=True):
                 with st.form(key="templates_login_form", border=False):
-                    username = st.text_input("Username", key="templates_username")
+                    username = st.text_input("Username or Email", key="templates_username")
                     password = st.text_input("Password", type="password", key="templates_password")
                     login_submit = st.form_submit_button("Log In", use_container_width=True)
                     
                     if login_submit:
-                        if username and password:  # Any non-empty username/password will work
+                        if username and password:
                             with st.spinner("Logging in..."):
-                                time.sleep(0.5)  # Simulate login request
-                                # Update session state directly
-                                st.session_state.logged_in = True
-                                st.session_state.username = username
-                                st.success(f"Welcome, {username}!")
-                                st.rerun()
+                                # Use the new login_user function from auth module
+                                if login_user(username, password):
+                                    st.success(f"Welcome, {st.session_state.username}!")
+                                    st.rerun()
+                                else:
+                                    st.error("Invalid username or password")
                         else:
-                            st.error("Please enter both username and password")
+                            st.error("Please enter both username/email and password")
         else:
             # Show username and logout button
-            st.markdown(f"**User:** {st.session_state.get('username', 'User')}")
-            if st.button("🚪 Logout", use_container_width=True):
+            user_info = f"**User:** {st.session_state.username}"
+            if st.session_state.get("premium_status", False):
+                user_info += " ⭐ Premium"
+            st.markdown(user_info)
+            
+            if st.button("🚪 Logout", key="templates_logout_btn", use_container_width=True):
                 with st.spinner("Logging out..."):
                     time.sleep(0.3)  # Simulate logout request
                     # Clear session state on logout
-                    st.session_state.logged_in = False
-                    st.session_state.username = None
-                    st.session_state.access_token = None
+                    logout()
                     st.success("Logged out successfully")
                     st.rerun()
         

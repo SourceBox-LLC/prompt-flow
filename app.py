@@ -17,7 +17,7 @@ import boto3
 import json
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from auth import login_page, logout   # Import the login and logout functions
+from auth import login_user, logout, register_user  # Update import
 from llm import call_llm
 
 ###############################################################################
@@ -511,27 +511,31 @@ def main():
             # Always show the login form when not logged in
             st.write("### Login")
             with st.form(key="persistent_login_form"):
-                username = st.text_input("Username", key="login_username")
+                username = st.text_input("Username or Email", key="login_username")
                 password = st.text_input("Password", type="password", key="login_password")
                 login_submit = st.form_submit_button("Log In")
                 
                 if login_submit:
-                    if username and password:  # Any non-empty username/password will work
-                        # Update session state directly
-                        st.session_state.logged_in = True
-                        st.session_state.username = username
-                        st.success(f"Welcome, {username}!")
-                        st.rerun()
+                    if username and password:
+                        with st.spinner("Logging in..."):
+                            # Use the new login_user function from auth module
+                            if login_user(username, password):
+                                st.success(f"Welcome, {st.session_state.username}!")
+                                st.rerun()
+                            else:
+                                st.error("Invalid username or password")
                     else:
-                        st.error("Please enter both username and password")
+                        st.error("Please enter both username/email and password")
         else:
-            # Show username and logout button
-            st.write(f"**User:** {st.session_state.get('username', 'User')}")
-            if st.button("🚪 Logout", use_container_width=True):
-                # Clear session state on logout
-                st.session_state.logged_in = False
-                st.session_state.username = None
-                st.session_state.access_token = None
+            # Show user info and logout button
+            user_info = f"**User:** {st.session_state.get('username', 'User')}"
+            if st.session_state.get("premium_status", False):
+                user_info += " ⭐ Premium"
+            st.write(user_info)
+            
+            if st.button("🚪 Logout", key="main_logout_btn", use_container_width=True):
+                # Use the updated logout function
+                logout()
                 st.success("Logged out successfully")
                 st.rerun()
         
